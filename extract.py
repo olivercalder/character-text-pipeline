@@ -36,7 +36,7 @@ def extract(filename):
             continue
         if speaker not in parts:
             parts[speaker] = []
-        for p in sp.iter(url + 'l'):
+        for p in sp.iter(url + 'p'):
             text = ET.tostring(p, encoding='unicode')
             text = text.replace('\n', ' ')
             text = text.replace('\t', ' ')
@@ -52,8 +52,9 @@ def extract(filename):
                 parts[speaker].append(text)
     tsv_list = []
     for speaker in parts:
-        row = [filename.replace('.xml', ''), speaker] + parts[speaker]
-        tsv_list.append('\t'.join(row))
+        if len(parts[speaker]) > 0:
+            row = [filename.replace('.xml', ''), speaker] + parts[speaker]
+            tsv_list.append('\t'.join(row))
     return '\n'.join(tsv_list) + '\n'
 
 
@@ -130,8 +131,8 @@ Usage information for {0}
     tsv_string = u''
     for filename in args:
         filename = in_directory + filename
-        tsv_string = tsv_string + extract(filename)
-    outfile.write(tsv_string)
+        tsv_string = tsv_string + extract(filename).strip()
+    outfile.write(tsv_string + '\n')
     if outfile != sys.stdout:
         outfile.close()
 
