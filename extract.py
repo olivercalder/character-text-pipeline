@@ -33,7 +33,11 @@ def extract(filename):
     is the character name, and the remaining elements are the raw xml <l>...</l>
     elements, with newline characters within the xml replaced by ' ' in order
     to allow the tsv formatting.'''
-    root = ET.parse(filename).getroot()
+    try:
+        root = ET.parse(filename).getroot()
+    except ET.ParseError:
+        print('ERROR: File {} could not be parsed.'.format(filename), file=sys.stderr)
+        return ''
     parts = {}
     root_tag = root.tag
     url = root_tag[:root_tag.find('}') + 1]
