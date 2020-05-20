@@ -29,7 +29,8 @@ def get_xml_delete():
             'note',
             'pb',
             'stage',
-            'bibl'
+            'bibl',
+            'floatingText'
             ]
     return delete_list
 
@@ -49,7 +50,12 @@ def get_xml_ignore():
             'abbr',
             'milestone',
             'choice',
-            'unclear'
+            'unclear',
+            'head',
+            'ref',
+            'lb',
+            'fw',
+            'add'
             ]
     return ignore_list
 
