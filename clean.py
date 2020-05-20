@@ -43,6 +43,7 @@ def get_xml_ignore():
             'ex',
             'list',
             'item',
+            'q'
             ]
     return ignore_list
 
@@ -76,28 +77,38 @@ def ignore_tags(text, tag_list):
     return text
 
 
-def fill_gaps(text):
-    '''Finds <gap> tags and replaces them with ^ characters based on the extent value.'''
-    while tag_opener('gap') in text:
-        start = text.find(tag_opener('gap'))
-        l = ET.fromstring(text)
-        gap = l.find(get_ns_tag('gap'))
-        if gap == None:
-            gap = l.find('gap')
-        if gap == None:
-            print(text)
-            print('\n\n')
-            print('Can\'t find gap tag in <l>.')
-            for child in l.iter():
-                print(child.tag)
-            exit()
+def fill_first_gap(root):
+    '''Finds the first <gap> recursively and deletes it from its parent.'''
+    gaps = []
+    gaps += root.findall(get_ns_tag('gap'))
+    gaps += root.findall('gap')
+    if len(gaps) > 0:
+        gap = gaps[0]
         extent_str = gap.get('extent')
         extent = 0
         if extent_str is not None:
             extent_list = extent_str.split()
             if extent_list[1] == 'letter':  # if not letter, then just ignore the whole thing
                 extent = int(extent_list[0])
-        l.remove(gap)
+        root.remove(gaps[0])
+        return extent
+    for child in root:
+        extent = fill_first_gap(child)
+        if extent != None:
+            return extent
+    return None
+
+
+def fill_gaps(text):
+    '''Finds <gap> tags and replaces them with ^ characters based on the extent value.'''
+    while tag_opener('gap') in text:
+        start = text.find(tag_opener('gap'))
+        l = ET.fromstring(text)
+        extent = fill_first_gap(l)
+        if extent == None:
+            print('ERROR: Can\'t find gap tag in <l>.', file=sys.stderr)
+            print(ET.tostring(l, encoding='unicode'), file=sys.stderr)
+            exit(1)
         text = ET.tostring(l, encoding='unicode')
         text = text.replace('\n', ' ')
         text = text.replace('\t', ' ')
@@ -124,7 +135,7 @@ def clean_xml(text):
     except ET.ParseError:
         print('\n\n', file=sys.stderr)
         print(text, file=sys.stderr)
-        l = ET.fromstring(text)
+        exit()
     for tag_del in get_xml_delete():
         for node in l.findall(get_ns_tag(tag_del)):
             l.remove(node)
