@@ -13,6 +13,20 @@ def get_characters(filename, directory='', stdout=False):
     exit(1)
 
 
+def get_child_lps(root):
+    '''Recursively finds all child <l> or <p> elements, ensuring that <l> or <p>
+    tags inside of other <l> or <p> tags are only counted once, as part of their
+    parent's xml content.'''
+    url = root.tag[:root.tag.find('}') + 1]
+    lps = []
+    for child in root:
+        if child.tag == url + 'l' or child.tag == url + 'p':
+            lps.append(child)
+        else:
+            lps += get_child_lps(child)
+    return lps
+
+
 def extract(filename):
     '''Returns a tsv string where each row is separated by a newline \\n. The
     first element of each row is the TCP code, the second element of the row
@@ -36,25 +50,19 @@ def extract(filename):
             continue
         if speaker not in parts:
             parts[speaker] = []
-        for p in sp.iter(url + 'p'):
-            text = ET.tostring(p, encoding='unicode')
-            text = text.replace('\n', ' ')
-            text = text.replace('\t', ' ')
-            text = text.strip()
-            if text:
-                parts[speaker].append(text)
-        for l in sp.iter(url + 'l'):
-            text = ET.tostring(l, encoding='unicode')
+        child_lps = get_child_lps(sp)
+        for lp in child_lps:
+            text = ET.tostring(lp, encoding='unicode')
             text = text.replace('\n', ' ')
             text = text.replace('\t', ' ')
             text = text.strip()
             if text:
                 parts[speaker].append(text)
     tsv_list = []
-    for speaker in parts:
-        if len(parts[speaker]) > 0:
-            row = [filename.replace('.xml', ''), speaker] + parts[speaker]
-            tsv_list.append('\t'.join(row))
+    for speaker in sorted(parts):
+        filename = filename.split('/')[-1]
+        row = [filename.replace('.xml', ''), speaker] + parts[speaker]
+        tsv_list.append('\t'.join(row))
     return '\n'.join(tsv_list) + '\n'
 
 
@@ -128,11 +136,16 @@ Usage information for {0}
         if o == '-o':
             # Specify an output file instead of stdout.
             outfile = open(a, 'w', encoding='utf-8')
-    tsv_string = u''
+    file_string_list = []
     for filename in args:
         filename = in_directory + filename
-        tsv_string = tsv_string + extract(filename).strip()
-    outfile.write(tsv_string + '\n')
+        file_string = extract(filename)
+        if file_string.strip():
+            file_string_list.append(extract(filename).strip())
+        else:
+            print('WARNING: No <sp> tags found in the entirety of file {}'.format(filename), file=sys.stderr)
+    tsv_string = '\n'.join(file_string_list) + '\n'
+    outfile.write(tsv_string)
     if outfile != sys.stdout:
         outfile.close()
 
