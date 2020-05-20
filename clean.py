@@ -28,7 +28,8 @@ def get_xml_delete():
     delete_list = [
             'note',
             'pb',
-            'stage'
+            'stage',
+            'bibl'
             ]
     return delete_list
 
@@ -43,7 +44,12 @@ def get_xml_ignore():
             'ex',
             'list',
             'item',
-            'q'
+            'q',
+            'lg',
+            'abbr',
+            'milestone',
+            'choice',
+            'unclear'
             ]
     return ignore_list
 
@@ -54,10 +60,18 @@ def get_xml_dictionary():
     xml_dict['<ns0:g ref="char:cmbAbbrStroke">̄</ns0:g>'] = 'm'
     xml_dict['<ns0:g ref="char:EOLhyphen"/>'] = ''
     xml_dict['<ns0:g ref="char:EOLhyphen" />'] = ''
+    xml_dict['<ns0:g ref="char:EOLunhyphen"/>'] = ''
+    xml_dict['<ns0:g ref="char:EOLunhyphen" />'] = ''
     xml_dict['<ns0:g ref="char:abque"/>'] = ''
     xml_dict['<ns0:g ref="char:abque" />'] = ''
     xml_dict['<ns0:g ref="char:punc">▪</ns0:g>'] = ''
     xml_dict['<ns0:g ref="char:leaf">❧</ns0:g>'] = ''
+    xml_dict['<ns0:g ref="char:V">Ʋ</ns0:g>'] = 'V'  # For these types of <g char:...> tags where the unicode char remains, could probably parse them properly
+    #xml_dict['<ns0:g ref="char:abquam" />'] = ''
+    #xml_dict['<ns0:g ref="char:absed" />'] = ''  # for abquam, absed, and ab, "quam", "sed",  were adjacent in the text, so the tags can be ignored?
+    #xml_dict['<ns0:g ref="char:aber" />'] = ''
+    xml_dict['<ns0:figure />'] = ''
+    xml_dict['<ns0:figure/>'] = ''
     xml_dict['&amp;'] = 'and'
     xml_dict['&amp;c'] = 'etc'
     return xml_dict
@@ -68,10 +82,11 @@ def ignore_tags(text, tag_list):
     for tag in tag_list:
         opener = tag_opener(tag)
         closer = end_tag(tag)
-        while opener in text:
-            start = text.find(opener)
-            end = text.find('>', start)  # assume xml is well-formed and each tag is eventually closed
-            text = text[:start] + text[end + 1:]
+        for nextchar in ' >':
+            while opener + nextchar in text:  # do not want to conflate tags which begin with the same string
+                start = text.find(opener + nextchar)
+                end = text.find('>', start)  # assume xml is well-formed and each tag is eventually closed
+                text = text[:start] + text[end + 1:]
         while closer in text:  # no real need for a while loop here if using replace. Leaving it in case that changes
             text = text.replace(closer, '')
     return text
@@ -90,7 +105,7 @@ def fill_first_gap(root):
             extent_list = extent_str.split()
             if extent_list[1] == 'letter':  # if not letter, then just ignore the whole thing
                 extent = int(extent_list[0])
-        root.remove(gaps[0])
+        root.remove(gap)
         return extent
     for child in root:
         extent = fill_first_gap(child)
@@ -116,6 +131,25 @@ def fill_gaps(text):
     return text
 
 
+def remove_abbreviations(text):
+    '''Removes all <g ref="char:ab...> tags.'''  # Should probably find a better way to replace them with their non-abbreviated substitutions
+    opener = tag_opener('g ref="char:ab')
+    while opener in text:
+        start = text.find(opener)
+        end = text.find('>', start)
+        text = text[:start] + text[end + 1:]
+    return text
+
+
+def remove_tags(root, tag):
+    '''Recursively removes all occurrences of the given tag from the given xml
+    element.'''
+    for child in root.findall(tag):
+        root.remove(child)
+    for child in root:
+        remove_tags(child, tag)
+
+
 def clean_xml(text):
     '''Cleans the given xml string by converting strings in the xml_dict to
     their corresponding values, then removing the tags in the xml ignore list
@@ -134,16 +168,18 @@ def clean_xml(text):
         l = ET.fromstring(text)
     except ET.ParseError:
         print('\n\n', file=sys.stderr)
+        print('ERROR: Failed to parse text:', file=sys.stderr)
         print(text, file=sys.stderr)
         exit()
     for tag_del in get_xml_delete():
-        for node in l.findall(get_ns_tag(tag_del)):
-            l.remove(node)
+        remove_tags(l, get_ns_tag(tag_del))
     text = ET.tostring(l, encoding='unicode')
     text = text.replace('\n', ' ')
     text = text.replace('\t', ' ')
 
     text = fill_gaps(text)
+
+    text = remove_abbreviations(text)
 
     # Until this point, needed to preserve boundary tags in order to parse as xml
     # There may also be embedded <l> or <p> within the line
