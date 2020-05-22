@@ -47,7 +47,7 @@ def get_xml_ignore():
             'item',
             'q',
             'lg',
-            'abbr',
+            'abbr',  # Arbitrarily ignores the fact that words might be abbreviations
             'milestone',
             'choice',
             'unclear',

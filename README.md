@@ -12,14 +12,20 @@ The pipeline functions by piping the output of one script into the input of anot
 Example usage:
 
 ```
-$ extracy.py plays_of_interest/A08* | clean.py | translate.py | separate.py -d ready_for_ml
+$ python3 extract.py plays_of_interest/A08* | python3 clean.py | python3 translate.py -d additional_dict.txt | python3 separate.py -d ready_for_ml
 ```
 
 The pipeline can be exited at any time and picked up by another script later by redirecting the input and output:
 
 ```
-$ extract.py plays_of_interest/* | clean.py -o cleaned_parts.txt
-$ translate.py -i cleaned_parts.txt | separate.py -m
+$ python3 extract.py plays_of_interest/* | python3 clean.py -o cleaned_parts.txt
+$ python3 translate.py -i cleaned_parts.txt | python3 separate.py -m
+```
+
+The separate script can also be inserted at any (or all) points in the pipeline without interrupting it, in order to preserve intermediate outputs.
+
+```
+$ ./extract.py | ./separate.py -m -d xml_parts | ./clean.py | ./separate.py -m -d cleaned_parts | ./translate.py | ./separate.py -m -d translated_parts
 ```
 
 ## Core Components
