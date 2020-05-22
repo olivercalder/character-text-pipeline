@@ -111,7 +111,6 @@ Usage information for {0}
             project, found here:
                 https://github.com/olivercalder/sonic-signatures
 
-
     Usage:
         python3 {0} [OPTION]... [FILE]...
 
@@ -174,7 +173,7 @@ def main():
         print('Please include filename of xml file from which to extract text,', file=sys.stderr)
         print('or include -c csvfile containing metadata with TCP codes.', file=sys.stderr)
         exit(1)
-    parse_extract(sys.argv[1:])
+    parse_merge(sys.argv[1:])
 
 
 if __name__ == '__main__':

@@ -108,7 +108,7 @@ Usage information for {0}
                         than writing to stdout.
 
     -d directory    Specify the output directory in which to write separated
-                        character texts
+                        character texts.
 
     -m              Match output directory names to the TCP code for each
                         character. Thus, sort characters into directories
