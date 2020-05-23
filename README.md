@@ -11,21 +11,21 @@ The pipeline functions by piping the output of one script into the input of anot
 
 Example usage:
 
-```
-$ python3 extract.py plays_of_interest/A08* | python3 clean.py | python3 translate.py -d additional_dict.txt | python3 separate.py -d ready_for_ml
+```sh
+pipeline$ python3 extract.py ../data/plays_of_interest/A08* | python3 clean.py | python3 translate.py -d additional_dict.txt | python3 separate.py -d ready_for_ml
 ```
 
 The pipeline can be exited at any time and picked up by another script later by redirecting the input and output:
 
-```
-$ python3 extract.py plays_of_interest/* | python3 clean.py -o cleaned_parts.txt
-$ python3 translate.py -i cleaned_parts.txt | python3 separate.py -m
+```sh
+pipeline$ python3 extract.py ../data/plays_of_interest/* | python3 clean.py -o cleaned_parts.txt
+pipeline$ python3 translate.py -i cleaned_parts.txt | python3 separate.py -m
 ```
 
 The separate script can also be inserted at any (or all) points in the pipeline without interrupting it, in order to preserve intermediate outputs.
 
-```
-$ ./extract.py | ./separate.py -m -d xml_parts | ./clean.py | ./separate.py -m -d cleaned_parts | ./translate.py | ./separate.py -m -d translated_parts
+```sh
+pipeline$ ./extract.py A08360.xml A04732.xml | ./separate.py -m -d xml_parts | ./clean.py | ./separate.py -m -d cleaned_parts | ./translate.py | ./separate.py -m -d translated_parts
 ```
 
 ## Core Components
