@@ -4,7 +4,8 @@ import sys
 import getopt
 import codecs
 import xml.etree.ElementTree as ET
-import conversion_dict
+sys.path.append(sys.path[0] + '/..')  # Assuming script is in pipeline directory, add project directory to path
+import lib.conversion_dict as conversion_dict
 
 
 def get_ns_tag(tag):
@@ -200,7 +201,7 @@ def clean_xml(text):
 
 def clean_unicode(text):
     '''Cleans the given text by converting unicode characters to ASCII according
-    to the dictionary in conversion_dict.py. Returns the cleaned text, which
+    to the dictionary in lib/conversion_dict.py. Returns the cleaned text, which
     should be ASCII-conpatible characters. Inspired by the clean_word() function
     from characterCleaner.py, part of the VEP pipeline, which can be found here:
         https://github.com/uwgraphics/VEP-pipeline
@@ -230,8 +231,8 @@ def clean_punctuation(text):
 def clean(in_string):
     '''Cleans a tsv string by first resolving xml tags and special characters,
     and then replacing all non-ASCII characters with their ASCII equivalents
-    using conversion_dict.py, which is a product of the VEP Pipeline project,
-    found at  https://github.com/uwgraphics/VEP-pipeline
+    using lib/conversion_dict.py, which is a product of the VEP Pipeline,
+    project, found at  https://github.com/uwgraphics/VEP-pipeline
     Returns a string with rows separated by newline characters, where each row
     has words separated by spaces. The first word is the TCP code, the second
     word is the character, and all remaining words are the character's cleaned

@@ -56,7 +56,12 @@ def extract(filename):
             parts[speaker] = []
         child_lps = get_child_lps(sp)
         for lp in child_lps:
-            text = ET.tostring(lp, encoding='unicode')
+            raw_text = ET.tostring(lp, encoding='unicode').strip()
+            text = raw_text[:raw_text.rfind('>') + 1]
+            if text != raw_text:
+                print('WARNING: {} {}\n    <l> or <p> element had trailing text, which was stripped:'.format(filename, speaker), file=sys.stderr)
+                print(raw_text, file=sys.stderr)
+                print('\n', file=sys.stderr)
             text = text.replace('\n', ' ')
             text = text.replace('\t', ' ')
             text = text.strip()

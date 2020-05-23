@@ -49,14 +49,15 @@ def separate(in_string, directory='', match=False):
         line_split = line.split(splitter)
         TCPcode, speaker = line_split[:2]
         speech = splitter.join(line_split[2:])
+        out_dir = directory
         if match:
-            directory = directory + TCPcode + '/'
-        if directory:
+            out_dir = out_dir + TCPcode + '/'
+        if out_dir:
             try:
-                os.makedirs(directory, 0o755)
+                os.makedirs(out_dir, 0o755)
             except FileExistsError:
                 pass
-        with open(directory + TCPcode + '_' + speaker + '.txt', 'w') as outfile:
+        with open(out_dir + TCPcode + '_' + speaker + '.txt', 'w') as outfile:
             outfile.write(speech)
 
 
@@ -124,7 +125,7 @@ Usage information for {0}
         if o == '-d':
             directory = a.rstrip('/') + '/'
         if o == '-m':
-            match = False
+            match = True
     in_string = infile.read()
     separate(in_string, directory, match)
     outfile.write(in_string)
