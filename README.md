@@ -12,7 +12,7 @@ The pipeline functions by piping the output of one script into the input of anot
 Example usage:
 
 ```sh
-pipeline$ python3 extract.py ../data/plays_of_interest/A08* | python3 clean.py | python3 translate.py -d additional_dict.txt | python3 separate.py -d ready_for_ml
+pipeline$ python3 extract.py ../data/plays_of_interest/A08* | python3 clean.py | python3 translate.py -d ../dicts/additional_dict.txt | python3 separate.py -d ready_for_ml
 ```
 
 The pipeline can be exited at any time and picked up by another script later by redirecting the input and output:
