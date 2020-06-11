@@ -17,6 +17,8 @@ def verify_string(in_string):
             splitter = '\t'
         line_split = line.split(splitter)
         if len(line_split) < 2:
+            print('ERROR: invalid line in input string', file=sys.stderr)
+            print(line, file=sys.stderr)
             return False
     return True
 
@@ -40,12 +42,12 @@ def separate(in_string, directory='', match=False):
     assert(verify_string)
     if directory:
         directory = directory.rstrip('/') + '/'
+    splitter = ' '
+    if '\t' in in_string:
+        splitter = '\t'
     for line in in_string.split('\n'):
         if line.strip() == '':
             continue
-        splitter = ' '
-        if '\t' in line:
-            splitter = '\t'
         line_split = line.split(splitter)
         TCPcode, speaker = line_split[:2]
         speech = splitter.join(line_split[2:])
@@ -76,7 +78,8 @@ def parse_separate(arg_list):
             print('''
 Usage information for {0}
 
-    {0} - translate character speech from Old English to modern English
+    {0} - separates output from the pipeline into different files for each
+            character
 
     Usage:
         python3 {0} [OPTION]... 
@@ -102,11 +105,12 @@ Usage information for {0}
 
     -i filename     Specify an input file from which to read the text data for
                         each character, where each line of the file is of the
-                        format described above. If this option
-                        is specified, then does not read from stdin.
+                        format described above. If this option is specified,
+                        then does not read from stdin.
 
-    -o filename     Specify an output file to which to write output, rather
-                        than writing to stdout.
+    -o filename     Specify an output file to which to write pipeline output
+                        (not separated character text, which is always written
+                        to file) rather than writing to stdout.
 
     -d directory    Specify the output directory in which to write separated
                         character texts.
