@@ -19,10 +19,10 @@ def check_tab(filenames):
     return False
 
 
-def check_filenames(filenames, lstrip=0, rstrip=0):
+def check_filenames(filenames, filename_separator='_', lstrip=0, rstrip=0):
     '''Checks that all files exist and that their filenames have the correct
-    number of underscore-separated elements to be valid. That is, they must
-    contain (lstrip + rstrip + 2) elements prior to the file extension.
+    number of elements to be valid. That is, they must contain
+    (lstrip + rstrip + 2) elements prior to the file extension.
     If any such filenames are found, adds them to a list, prints them to
     stderr, and returns false. Else returns True.'''
     rax = True
@@ -31,7 +31,7 @@ def check_filenames(filenames, lstrip=0, rstrip=0):
     for filename in filenames:
         if not os.path.isfile(filename):
             not_found.append(filename)
-        elif len(filename.split('_')) != lstrip + rstrip + 2:
+        elif len(filename.split(filename_separator)) != lstrip + rstrip + 2:
             invalid.append(filename)
     if len(not_found) > 0:
         print('ERROR: Files not found', file=sys.stderr)
@@ -46,7 +46,7 @@ def check_filenames(filenames, lstrip=0, rstrip=0):
     return rax
 
 
-def merge(filenames, separator=None, lstrip=0, rstrip=0):
+def merge(filenames, separator=None, filename_separator='_', lstrip=0, rstrip=0):
     '''Merges the given filenames into a single string of the form expected by
     all the other scripts (besides extract) in the pipeline. The separation
     between elements is either a space character or a tab character. If a tab
@@ -57,6 +57,8 @@ def merge(filenames, separator=None, lstrip=0, rstrip=0):
     files will not be modified, ie. if the separator is a tab character and
     there are no tab characters, then the output string for that character will
     have three tab-separated elements: code\\tcharacter\\ttext
+    The filename_separator parameter specifies which character to use to split
+    the filename. By default, underscore _ is used.
     The lstrip and rstrip parameters specify how many components of the filename
     to ignore from the left and right, respectively, where each component is
     separated by an underscore character.
@@ -64,55 +66,58 @@ def merge(filenames, separator=None, lstrip=0, rstrip=0):
         merge('orig_text_Ham_Hamlet_clean.txt', lstrip=2, rstrip=1)
     produces
         Ham Hamlet word [word]...\\n'''
-    assert(check_filenames(filenames, lstrip, rstrip))
+    assert(check_filenames(filenames, filename_separator, lstrip, rstrip))
     out_list = []
     if separator is None:
         separator = ' '
         if check_tab(filenames):
             separator = '\t'
     for filename in filenames:
-        filename = '.'.join(filename.split('.')[:-1])  # Removes file extension, so assumes there is one, or that removing a trailing . is not harmful
-        filename_list = filename.split('_')
-        TCPcode, speaker = filename_list[lstrip:rstrip]
+        filename_str = '.'.join(filename.split('.')[:-1])  # Removes file extension, so assumes there is one, or that removing a trailing . is not harmful
+        filename_list = filename_str.split(filename_separator)[lstrip:]
+        if abs(rstrip) > 0:
+            filename_list = filename_list[:-abs(rstrip)]
+        TCPcode, speaker = filename_list
         with open(filename, 'r') as infile:
             text = infile.read()
-            line_string = separator.join([TCPcode, speaker, text])
+            line_string = separator.join([TCPcode, speaker, text.strip()])
             out_list.append(line_string)
-    return line_string
+    return '\n'.join(out_list)
 
 
 def parse_merge(arg_list):
     '''Parses command-line arguments and runs the core merge() function
     accordingly. Writes the output to stdout unless an output file is specified
     using the -o flag.'''
-    optlist, args = getopt.getopt(arg_list, 'ho:s:l:r:')
+    optlist, args = getopt.getopt(arg_list, 'ho:s:t:l:r:')
     in_directory = ''
     outfile = sys.stdout
     lstrip = 0
     rstrip = 0
     separator = None
+    filename_separator = '_'
     for o, a in optlist:
         if o == '-h':
             print('''
 Usage information for {0}
 
     {0} - merge character speech from many files which were produced by
-            extract.py into one output string of the form expected by all
+            separate.py into one output string of the form expected by all
             of the other scripts (besides extract) in the pipeline.
-            Requires that the filenames be of the form:
-                code_character.fileextension
-            While files produced by extract.py are preferred, also works with
-            other files which satisfy this naming convention. Additionally,
-            The -l and -r flags can be used to make other filenames conform
-            to this convention, such as
-                python3 merge.py -s 1 text_Ham_Hamlet.txt
-            This allows the merge script (and thus the other scripts in the
-            pipeline) to be used in conjunction with the Sonic Signatures
-            project, found here:
-                https://github.com/olivercalder/sonic-signatures
 
     Usage:
         python3 {0} [OPTION]... [FILE]...
+
+    Requires that the filenames be of the form:
+        code_character.fileextension
+    While files produced by extract.py are preferred, also works with other
+    files which satisfy this naming convention. Additionally, the -l and -r
+    flags can be used to make other filenames conform to this convention,
+    such as
+        python3 merge.py -s 1 text_Ham_Hamlet.txt
+    This allows the merge script (and thus the other scripts in the pipeline)
+    to be used in conjunction with the Sonic Signatures project, found here:
+        https://github.com/olivercalder/sonic-signatures
 
     Writes one character's text per line to stdout, where each line is in
     the style of a tsv row, with the first element being the TCP code, the
@@ -133,6 +138,14 @@ Usage information for {0}
                         files, a tab is used as a separator for all, else a
                         space is used.
 
+    -t char         Specify a filename separator to use when splitting
+                        filenames into their play code and character name.
+                        By defult, underscore _ is used.
+                        For example,
+                            python3 merge.py -t - Ham-Hamlet.txt
+                        produces
+                            Ham Hamlet word 
+
     -l #            Specify a number of elements (each separated by an
                         underscore character) to strip from the left of
                         the filename when adding it to the output string.
@@ -147,22 +160,25 @@ Usage information for {0}
                         For example,
                             python3 merge.py -r 1 Ham_Hamlet_orig.txt
 
-                        The -l and -r flags can be used together as well.
+                        All flags can be used together as well.
+                        The -t flag takes effect before the -l or -r flags.
                         For example,
-                            python3 merge.py -l 2 -r 1 orig_text_Ham_Hamlet_cleaned-ready.txt
+                            python3 merge.py -s : -t - -l 2 -r 1 orig-text-Ham-Hamlet-cleaned_ready.txt
                         produces
-                            Ham Hamlet word [word]...\\n
-'''.format(sys.argv[0]))
+                            Ham:Hamlet:word[:word]...\\n
+'''.format(sys.argv[0]), file=sys.stderr)
             exit(0)
         if o == '-o':
             outfile = open(a, 'w')
         if o == '-s':
             separator = a
+        if o == '-t':
+            filename_separator = a
         if o == '-l':
             lstrip = int(a)
         if o == '-r':
             rstrip = int(a)
-    out_string = merge(args, separator, lstrip, rstrip)
+    out_string = merge(args, separator, filename_separator, lstrip, rstrip)
     outfile.write(out_string)
     if outfile != sys.stdout:
         outfile.close()
@@ -170,9 +186,7 @@ Usage information for {0}
 
 def main():
     if len(sys.argv) == 1:
-        print('Please include filename of xml file from which to extract text,', file=sys.stderr)
-        print('or include -c csvfile containing metadata with TCP codes.', file=sys.stderr)
-        exit(1)
+        sys.argv.append('-h')
     parse_merge(sys.argv[1:])
 
 
