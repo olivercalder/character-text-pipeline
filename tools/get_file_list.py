@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import csv
 
 with open('VEP_metadata.csv', newline='') as infile:
