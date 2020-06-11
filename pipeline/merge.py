@@ -114,7 +114,7 @@ Usage information for {0}
     files which satisfy this naming convention. Additionally, the -l and -r
     flags can be used to make other filenames conform to this convention,
     such as
-        python3 merge.py -s 1 text_Ham_Hamlet.txt
+        python3 {0} -s 1 text_Ham_Hamlet.txt
     This allows the merge script (and thus the other scripts in the pipeline)
     to be used in conjunction with the Sonic Signatures project, found here:
         https://github.com/olivercalder/sonic-signatures
@@ -150,7 +150,7 @@ Usage information for {0}
                         underscore character) to strip from the left of
                         the filename when adding it to the output string.
                         For example,
-                            python3 merge.py -s 1 text_Ham_Hamlet.txt
+                            python3 {0} -s 1 text_Ham_Hamlet.txt
                         produces
                             Ham Hamlet word [word]...\\n
 
@@ -158,12 +158,12 @@ Usage information for {0}
                         underscore character) to strip from the right of
                         the filename when adding it to the output string.
                         For example,
-                            python3 merge.py -r 1 Ham_Hamlet_orig.txt
+                            python3 {0} -r 1 Ham_Hamlet_orig.txt
 
                         All flags can be used together as well.
                         The -t flag takes effect before the -l or -r flags.
                         For example,
-                            python3 merge.py -s : -t - -l 2 -r 1 orig-text-Ham-Hamlet-cleaned_ready.txt
+                            python3 {0} -s : -t - -l 2 -r 1 orig-text-Ham-Hamlet-cleaned_ready.txt
                         produces
                             Ham:Hamlet:word[:word]...\\n
 '''.format(sys.argv[0]), file=sys.stderr)

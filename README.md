@@ -177,7 +177,8 @@ This script provides output of the form expected by `merge.py`, and is its inver
 ```
 Usage information for separate.py
 
-    separate.py - translate character speech from Old English to modern English
+    separate.py - separates output from the pipeline into different files for
+            each character
 
     Usage:
         python3 separate.py [OPTION]... 
@@ -203,11 +204,12 @@ Usage information for separate.py
 
     -i filename     Specify an input file from which to read the text data for
                         each character, where each line of the file is of the
-                        format described above. If this option
-                        is specified, then does not read from stdin.
+                        format described above. If this option is specified,
+                        then does not read from stdin.
 
-    -o filename     Specify an output file to which to write output, rather
-                        than writing to stdout.
+    -o filename     Specify an output file to which to write pipeline output
+                        (not separated character text, which is always written
+                        to file) rather than writing to stdout.
 
     -d directory    Specify the output directory in which to write separated
                         character texts.
@@ -231,22 +233,22 @@ This script provides output of the form expected by `clean.py`, `translate.py`, 
 Usage information for merge.py
 
     merge.py - merge character speech from many files which were produced by
-            extract.py into one output string of the form expected by all
+            separate.py into one output string of the form expected by all
             of the other scripts (besides extract) in the pipeline.
-            Requires that the filenames be of the form:
-                code_character.fileextension
-            While files produced by extract.py are preferred, also works with
-            other files which satisfy this naming convention. Additionally,
-            The -l and -r flags can be used to make other filenames conform
-            to this convention, such as
-                python3 merge.py -s 1 text_Ham_Hamlet.txt
-            This allows the merge script (and thus the other scripts in the
-            pipeline) to be used in conjunction with the Sonic Signatures
-            project, found here:
-                https://github.com/olivercalder/sonic-signatures
 
     Usage:
         python3 merge.py [OPTION]... [FILE]...
+
+    Requires that the filenames be of the form:
+        code_character.fileextension
+    While files produced by extract.py are preferred, also works with other
+    files which satisfy this naming convention. Additionally, the -l and -r
+    flags can be used to make other filenames conform to this convention,
+    such as
+        python3 merge.py -s 1 text_Ham_Hamlet.txt
+    This allows the merge script (and thus the other scripts in the pipeline)
+    to be used in conjunction with the Sonic Signatures project, found here:
+        https://github.com/olivercalder/sonic-signatures
 
     Writes one character's text per line to stdout, where each line is in
     the style of a tsv row, with the first element being the TCP code, the
@@ -267,6 +269,14 @@ Usage information for merge.py
                         files, a tab is used as a separator for all, else a
                         space is used.
 
+    -t char         Specify a filename separator to use when splitting
+                        filenames into their play code and character name.
+                        By defult, underscore _ is used.
+                        For example,
+                            python3 merge.py -t - Ham-Hamlet.txt
+                        produces
+                            Ham Hamlet word 
+
     -l #            Specify a number of elements (each separated by an
                         underscore character) to strip from the left of
                         the filename when adding it to the output string.
@@ -281,9 +291,65 @@ Usage information for merge.py
                         For example,
                             python3 merge.py -r 1 Ham_Hamlet_orig.txt
 
-                        The -l and -r flags can be used together as well.
+                        All flags can be used together as well.
+                        The -t flag takes effect before the -l or -r flags.
                         For example,
-                            python3 merge.py -l 2 -r 1 orig_text_Ham_Hamlet_cleaned-ready.txt
+                            python3 merge.py -s : -t - -l 2 -r 1 orig-text-Ham-Hamlet-cleaned_ready.txt
                         produces
-                            Ham Hamlet word [word]...\n
+                            Ham:Hamlet:word[:word]...\n
 ```
+
+## Tools
+
+### get\_character\_list
+
+```
+Usage information for get_character_list.py
+
+    get_character_list.py - extract the list of all characters for each play to one or more
+            files
+
+    Usage:
+        python3 get_character_list.py [OPTION]... 
+
+    Reads one character's text per line of stdin, the format of the line
+    corresponds to the output of one of the other scripts in the pipeline.
+    Thus, the line is a tsv row or a line of space-separated strings, where
+    the first string is the TCP code, the second string is the character's
+    name, and all remaining strings are either xml or single words.
+    Thus, each line of stdin is of the form:
+        TCPcode character word [word]...\n
+    OR
+        TCPcode\tcharacter\txmltext[\txmltext]...\n
+
+    Separates each line of stdin into a separate character and writes that
+    character's name to a file.
+    Passes stdin to stdout without modification, thus allowing this script to
+    be inserted into the pipeline to save some stage of the output without
+    interrupting the pipeline.
+
+
+    -h              Display this help message.
+
+    -i filename     Specify an input file from which to read the text data for
+                        each character, where each line of the file is of the
+                        format described above. If this option is specified,
+                        then does not read from stdin.
+
+    -o filename     Specify an output file to which to write pipeline output
+                        (not character name output, which is always written
+                        to file) rather than writing to stdout.
+
+    -d directory    Specify the output directory in which to write separated
+                        character texts.
+
+    -m              Separate characters into different files based on their
+                        play code, rather than placing all characters in a
+                        single file along with their play codes. If -d is
+                        used, these files will be placed in the directory
+                        given by -d.
+```
+
+### get\_file\_list
+
+Extracts xml filenames from a VEP metadata csv file. Not compatible with the rest of the pipeline.

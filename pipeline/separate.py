@@ -78,8 +78,8 @@ def parse_separate(arg_list):
             print('''
 Usage information for {0}
 
-    {0} - separates output from the pipeline into different files for each
-            character
+    {0} - separates output from the pipeline into different files for
+            each character
 
     Usage:
         python3 {0} [OPTION]... 
