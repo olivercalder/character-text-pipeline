@@ -3,8 +3,10 @@
 import sys
 import getopt
 
+std_dict_path = '../dicts/standardizer_dictionary.txt'
 
-def get_translation_dictionary(dict_filename='standardizer_dictionary.txt', separator=':', modernize=True):
+
+def get_translation_dictionary(dict_filename=std_dict_path, separator=':', modernize=True):
     '''Loads a translation dictionary from the given dictionary file, which
     should have lines of the form:
         old_english:modern_english:priority
@@ -34,7 +36,7 @@ def get_translation_dictionary(dict_filename='standardizer_dictionary.txt', sepa
     return translation_dict
 
 
-def translate(in_string, dict_filename='standardizer_dictionary.txt', separator=':', modernize=True):
+def translate(in_string, dict_filename=std_dict_path, separator=':', modernize=True):
     '''Translates Old English and common abbreviations or words with missing
     letters into modern English using a dictionary file. The input text should
     be a string with rows separated by newline \\n characters, and each row
@@ -66,7 +68,7 @@ def parse_translate(arg_list):
     optlist, args = getopt.getopt(arg_list, 'hpi:o:d:')
     infile = sys.stdin
     outfile = sys.stdout
-    dict_filename = 'standardizer_dictionary.txt'
+    dict_filename = std_dict_path
     separator = ':'
     modernize = True
     for o, a in optlist:
