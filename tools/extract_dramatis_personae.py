@@ -28,22 +28,39 @@ def extract_dramatis_personae(filename):
     for div in root.iter(url + 'div'):
         if 'type' in div.attrib and div.attrib['type'] == 'dramatis_personae':
             count += 1
-            contents = []
+            elements = []
             for item in div.iter(url + 'item'):  # First get all items, if there are any
-                table = item.find(url + 'table')
+                if len([l for l in item.iter(url + 'list')]) == 0:  # Skip this item if it contains another list
+                    elements.append(item)
+            for p in div.iter(url + 'items'):  # Get all <p> elements, including ones containing tables
+                elements.append(p)
+            contents = []
+            for elem in elements:
+                table = elem.find(url + 'table')
                 if table is None:
-                    contents.append(ET.tostring(item, encoding='unicode'))
-                else:  # There is a table, so take the first cell from each row
+                    table = elem.find('table')
+                tables = [t for t in elem.iter(url + 'table')]
+                if table is None and len(tables) > 0:
+                    print('WARNING: {}-{}\n    Table in item but table is not found as a child of the element'.format(filename, count), file=sys.stderr)
+                    print(ET.tostring(elem), file=sys.stderr)
+                    print(file=sys.stderr)
+                if table is not None:  # There is a table, so take the first cell from each row
+                    found_row = False
                     for row in table.findall(url + 'row'):
+                        found_row = True
                         cell = row.find(url + 'cell')
                         if cell is None:
-                            print('WARNING: {}\n    Row missing cell in table:'.format(filename), file=sys.stderr)
+                            print('WARNING: {}-{}\n    Row missing cell in table:'.format(filename, count), file=sys.stderr)
                             print(ET.tostring(table), file=sys.stderr)
-                            print('\n\n', file=sys.stderr)
+                            print(file=sys.stderr)
                         else:  # Assume first cell of the row is character name
-                            contents.append(ET.tostring(cell))
-            for p in div.iter(url + 'p'):  # Some files use <p> tags instead of <item>
-                contents.append(ET.tostring(p, encoding='unicode'))
+                            contents.append(ET.tostring(cell, encoding='unicode'))
+                    if not found_row:
+                        print('WARNING: {}-{}\n    Failed to find row in table:'.format(filename, count), file=sys.stderr)
+                        print(ET.tostring(table), file=sys.stderr)
+                        print(file=sys.stderr)
+                else:
+                    contents.append(ET.tostring(elem, encoding='unicode'))
 
             xml_dict = clean.get_xml_dictionary()
             for content in contents:
@@ -56,11 +73,11 @@ def extract_dramatis_personae(filename):
                     try:
                         element = ET.fromstring(content)
                     except ET.ParseError:
-                        print('ERROR: Failed to parse text:', file=sys.stderr)
+                        print('ERROR: {}-{}\n    Failed to parse text:'.format(filename, count), file=sys.stderr)
                         print(content, file=sys.stderr)
-                        print('\n\n', file=sys.stderr)
-                        exit()
-                    for tag_del in clean.get_xml_delete():
+                        print(file=sys.stderr)
+                        exit(1)
+                    for tag_del in clean.get_xml_delete() + ['label']:
                         clean.remove_tags(element, clean.get_ns_tag(tag_del))
                     content = ET.tostring(element, encoding='unicode')
 
@@ -70,7 +87,7 @@ def extract_dramatis_personae(filename):
                         if key in content:
                             content = content.replace(key, xml_dict[key])
 
-                    content = clean.ignore_tags(content, clean.get_xml_ignore() + ['p'])
+                    content = clean.ignore_tags(content, clean.get_xml_ignore() + ['p', 'cell'])
 
                     content = clean.remove_abbreviations(content)
 
@@ -79,9 +96,10 @@ def extract_dramatis_personae(filename):
                     content = content.strip()
 
                     if '<' in content or '>' in content:
-                        print('WARNING: {}\n    Text not fully cleaned of xml.'.format(filename), file=sys.stderr)
+                        print('WARNING: {}-{}\n    Text not fully cleaned of xml.'.format(filename, count), file=sys.stderr)
                         print(content, file=sys.stderr)
-                        print('\n\n', file=sys.stderr)
+                        print(file=sys.stderr)
+                        quit()
                 
                     filename_id = filename.split('/')[-1]
                     row = [filename_id.replace('.xml', '') + '-' + str(count), content]
