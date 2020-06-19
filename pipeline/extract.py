@@ -2,15 +2,7 @@
 
 import sys
 import getopt
-import os
 import xml.etree.ElementTree as ET
-
-
-def get_characters(filename, directory='', stdout=False):
-    root = ET.parse(filename).getroot()
-    characters = []
-    # Not all plays have characters listed in even remotely the same format
-    exit(1)
 
 
 def get_child_lps(root):
@@ -29,49 +21,61 @@ def get_child_lps(root):
 
 def extract(filename):
     '''Returns a tsv string where each row is separated by a newline \\n. The
-    first element of each row is the TCP code, the second element of the row
-    is the character name, and the remaining elements are the raw xml <l>...</l>
-    elements, with newline characters within the xml replaced by ' ' in order
-    to allow the tsv formatting.'''
+    first element of each row is the TCP code followed by a hyphen and the
+    number of the <text> tag in which the character speech was found, the second
+    element of the row is the character name, and the remaining elements are the
+    raw xml <l>...</l> elements, with newline characters within the xml replaced
+    by ' ' in order to allow the tsv formatting.'''
     try:
         root = ET.parse(filename).getroot()
     except ET.ParseError:
         print('ERROR: File {} could not be parsed.'.format(filename), file=sys.stderr)
         return ''
-    parts = {}
     root_tag = root.tag
     url = root_tag[:root_tag.find('}') + 1]
-    for sp in root.iter(url + 'sp'):
-        speaker_iter = sp.iter(url + 'speaker')
-        speaker = ''
-        for s in speaker_iter:  # should only loop once
-            speaker = (speaker + ' '.join([text for text in s.itertext()])).replace('\n', ' ').strip()
-        while '  ' in speaker:
-            speaker = speaker.replace('  ', ' ')
-        if speaker == '':
-            print('WARNING: {}\n    No speaker for <sp> tag with elements:'.format(filename), file=sys.stderr)
-            print(ET.tostring(sp, encoding='unicode'), file=sys.stderr)
-            continue
-        if speaker not in parts:
-            parts[speaker] = []
-        child_lps = get_child_lps(sp)
-        for lp in child_lps:
-            raw_text = ET.tostring(lp, encoding='unicode').strip()
-            text = raw_text[:raw_text.rfind('>') + 1]
-            if text != raw_text:
-                print('WARNING: {} {}\n    <l> or <p> element had trailing text, which was stripped:'.format(filename, speaker), file=sys.stderr)
-                print(raw_text, file=sys.stderr)
-                print('\n', file=sys.stderr)
-            text = text.replace('\n', ' ')
-            text = text.replace('\t', ' ')
-            text = text.strip()
-            if text:
-                parts[speaker].append(text)
     tsv_list = []
-    for speaker in sorted(parts):
-        filename = filename.split('/')[-1]
-        row = [filename.replace('.xml', ''), speaker] + parts[speaker]
-        tsv_list.append('\t'.join(row))
+    count = 0
+    for text in root.iter(url + 'text'):  # Each "play of interest" has at least one <text> tag
+        has_inner_text = False
+        for sub_text in text.iter(url + 'text'):  # If the text element has an inner text element, ignore the former
+            if sub_text != text:
+                has_inner_text = True
+        if has_inner_text:
+            print('WARNING: {}\n    Skipping <text> tag because it contains an inner <text> tag.'.format(filename), file=sys.stderr)
+            continue
+        else:  # <text> tag has no inner <text> tags, so it is assumed that it specifies a single complete text
+            count += 1
+            parts = {}
+            for sp in text.iter(url + 'sp'):
+                speaker_iter = sp.iter(url + 'speaker')
+                speaker = ''
+                for s in speaker_iter:  # should only loop once
+                    speaker = (speaker + ' '.join([text for text in s.itertext()])).replace('\n', ' ').strip()
+                while '  ' in speaker:
+                    speaker = speaker.replace('  ', ' ')
+                if speaker == '':
+                    print('WARNING: {}\n    No speaker for <sp> tag with elements:'.format(filename), file=sys.stderr)
+                    print(ET.tostring(sp, encoding='unicode'), file=sys.stderr)
+                    continue
+                if speaker not in parts:
+                    parts[speaker] = []
+                child_lps = get_child_lps(sp)
+                for lp in child_lps:
+                    raw_text = ET.tostring(lp, encoding='unicode').strip()
+                    text = raw_text[:raw_text.rfind('>') + 1]
+                    if text != raw_text:
+                        print('WARNING: {} {}\n    <l> or <p> element had trailing text, which was stripped:'.format(filename, speaker), file=sys.stderr)
+                        print(raw_text, file=sys.stderr)
+                        print('\n', file=sys.stderr)
+                    text = text.replace('\n', ' ')
+                    text = text.replace('\t', ' ')
+                    text = text.strip()
+                    if text:
+                        parts[speaker].append(text)
+            for speaker in sorted(parts):
+                filename_id = filename.split('/')[-1]
+                row = [filename_id.replace('.xml', '') + '-' + str(count), speaker] + parts[speaker]
+                tsv_list.append('\t'.join(row))
     return '\n'.join(tsv_list) + '\n'
 
 
