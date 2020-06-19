@@ -65,7 +65,7 @@ def parse_translate(arg_list):
     '''Parses command-line arguments and runs the core translate() function
     accordingly. Writes the output to stdout unless an output file is specified
     using the -o flag.'''
-    optlist, args = getopt.getopt(arg_list, 'hpi:o:d:')
+    optlist, args = getopt.getopt(arg_list, 'hpi:o:d:s:')
     infile = sys.stdin
     outfile = sys.stdout
     dict_filename = std_dict_path
@@ -98,9 +98,9 @@ Usage information for {0}
     -h              Display this help message.
 
     -i filename     Specify an input file from which to read the cleaned text
-                        text data for each character, where each line of the
-                        file is of the format described above. If this option
-                        is specified, then does not read from stdin.
+                        data for each character, where each line of the file is
+                        of the format described above. If this option is
+                        specified, then does not read from stdin.
 
     -o filename     Specify an output file to which to write output, rather
                         than writing to stdout.
@@ -131,6 +131,8 @@ Usage information for {0}
             outfile = open(a, 'w')
         if o == '-d':
             dict_filename = a
+        if o == '-s':
+            separator = a
         if o == '-p':
             modernize = False
     in_string = infile.read()
