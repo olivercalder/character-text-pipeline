@@ -23,7 +23,7 @@ def verify_string(in_string):
     return True
 
 
-def get_character_list(in_string, directory='', match=False):
+def get_character_list(in_string, directory='', filename='characters.txt', match=False):
     '''Takes an input string which has a line for each character, where the
     lines are separated by newline \\n characters. The format of the line
     corresponds to the output of one of the other scripts in the pipeline.
@@ -50,6 +50,13 @@ def get_character_list(in_string, directory='', match=False):
     if '\t' in in_string:
         splitter = '\t'
     if match:
+        filename_components = filename.split('.')
+        if len(filename_components) == 1:  # If no extension is given, default to .txt
+            prefix = filename
+            suffix = '.txt'
+        else:
+            prefix = '.'.join(filename_components[:-1])
+            suffix = '.' + filename_components[-1]
         curr_code = None
         outfile = None
         lines = in_string.split('\n')
@@ -61,13 +68,12 @@ def get_character_list(in_string, directory='', match=False):
             if curr_code == None or curr_code != TCPcode:
                 if outfile != None:
                     outfile.close()
-                outfile = open(directory + 'characters_' + TCPcode + '.txt', 'w')
+                outfile = open(directory + prefix + '_' + TCPcode + suffix, 'w')
                 curr_code = TCPcode
             outfile.write(speaker + '\n')
         if outfile != None:
             outfile.close
     else:
-        filename = 'characters.txt'
         with open(directory + filename, 'w') as outfile:
             for line in in_string.split('\n'):
                 if line.strip() == '':
@@ -81,10 +87,11 @@ def parse_get_character_list(arg_list):
     accordingly. Writes each character's text to a separate file, and writes
     the original input to stdout so that separate.py can be inserted into the
     pipeline without interrupting it.''' 
-    optlist, args = getopt.getopt(arg_list, 'hmi:o:d:')
+    optlist, args = getopt.getopt(arg_list, 'hmi:o:d:n:')
     infile = sys.stdin
     outfile = sys.stdout
     directory = ''
+    filename = 'characters.txt'
     match = False
     for o, a in optlist:
         if o == '-h':
@@ -128,6 +135,15 @@ Usage information for {0}
     -d directory    Specify the output directory in which to write separated
                         character texts.
 
+    -n filename.ext Specify the name of the file to which to write character
+                        names (default is characters.txt). If -m is used, then
+                        the format of each filename will be as follows:
+                            filename_TCPcode-#.ext
+                        Namely, the extension on the filename will be passed to
+                        the end of the complete filename, with the TCP code and
+                        text number inserted between the filename and the
+                        extension.
+
     -m              Separate characters into different files based on their
                         play code, rather than placing all characters in a
                         single file along with their play codes. If -d is
@@ -141,10 +157,12 @@ Usage information for {0}
             outfile = open(a, 'w')
         if o == '-d':
             directory = a.rstrip('/') + '/'
+        if o == '-n':
+            filename = a
         if o == '-m':
             match = True
     in_string = infile.read()
-    get_character_list(in_string, directory, match)
+    get_character_list(in_string, directory, filename, match)
     outfile.write(in_string)
     if infile != sys.stdin:
         infile.close()
