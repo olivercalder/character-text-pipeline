@@ -48,12 +48,7 @@ def extract_dramatis_personae(filename):
                     found_row = False
                     for row in table.findall(url + 'row'):
                         found_row = True
-                        cell = row.find(url + 'cell')
-                        if cell is None:
-                            print('WARNING: {}-{}\n    Row missing cell in table:'.format(filename, count), file=sys.stderr)
-                            print(ET.tostring(table), file=sys.stderr)
-                            print(file=sys.stderr)
-                        else:  # Assume first cell of the row is character name
+                        for cell in row.findall(url + 'cell'):
                             contents.append(ET.tostring(cell, encoding='unicode'))
                     if not found_row:
                         print('WARNING: {}-{}\n    Failed to find row in table:'.format(filename, count), file=sys.stderr)
@@ -100,10 +95,11 @@ def extract_dramatis_personae(filename):
                         print(content, file=sys.stderr)
                         print(file=sys.stderr)
                         quit()
-                
-                    filename_id = filename.split('/')[-1]
-                    row = [filename_id.replace('.xml', '') + '-' + str(count), content]
-                    tsv_list.append('\t'.join(row))
+
+                    if content:
+                        filename_id = filename.split('/')[-1]
+                        row = [filename_id.replace('.xml', '') + '-' + str(count), content]
+                        tsv_list.append('\t'.join(row))
     return '\n'.join(tsv_list) + '\n'
 
 
